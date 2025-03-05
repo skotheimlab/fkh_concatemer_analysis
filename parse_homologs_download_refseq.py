@@ -8,16 +8,12 @@ Created on Mon Mar  3 17:22:54 2025
 
 import pandas as pd
 from os import path
-# import ncbi_genome_download as ngd
 import os
 from re import findall
-os.environ['PYSNEMBL_CACHE_DIR'] = '/Users/xies/Desktop/Ensembl cache'
-
-from pyfaidx import Fasta
 
 from Bio import Entrez
 
-dirname = '/Users/xies/Library/CloudStorage/OneDrive-Stanford/Bioinformatics/Whi5 promoter/'
+dirname = '/Users/xies/Library/CloudStorage/OneDrive-Stanford/Bioinformatics/Whi5/'
 
 #%% Fungal BlastP
 
@@ -82,30 +78,29 @@ for protID,entry in genes.items():
     taxaID = entry['Entrezgene_source']['BioSource']['BioSource_org']['Org-ref']['Org-ref_db'][0]['Dbtag_tag']['Object-id']['Object-id_id']
     
     # Chromosome
-    chrM = entry['Entrezgene_source']['BioSource']['BioSource_subtype'][0]['SubSource_name']
+    chrID = entry['Entrezgene_gene-source']['Gene-source']['Gene-source_src-str1']
     
     locus = entry['Entrezgene_locus'][0]
     # Find the correct commentary type: 'genomic'
     for locus in entry['Entrezgene_locus']:
         if locus['Gene-commentary_type'].attributes['value'] == 'genomic':
-        
-            interval = locus['Gene-commentary_seqs'][0]['Seq-loc_int']['Seq-interval']
-            start = interval['Seq-interval_from']
-            end = interval['Seq-interval_to']
-            strand = interval['Seq-interval_strand']['Na-strand'].attributes['value']
-                    
-            entrezIDs.loc[protID,'Chr'] = chrM
-            entrezIDs.loc[protID,'Start'] = int(start)
-            entrezIDs.loc[protID,'End'] = int(end)
-            entrezIDs.loc[protID,'Strand'] = strand
-            entrezIDs.loc[protID,'TaxonID'] = taxaID
+            if locus['Gene-commentary_accession'] == chrID:
+            
+                interval = locus['Gene-commentary_seqs'][0]['Seq-loc_int']['Seq-interval']
+                start = interval['Seq-interval_from']
+                end = interval['Seq-interval_to']
+                strand = interval['Seq-interval_strand']['Na-strand'].attributes['value']
+                        
+                entrezIDs.loc[protID,'Chr'] = chrID
+                entrezIDs.loc[protID,'Start'] = int(start)
+                entrezIDs.loc[protID,'End'] = int(end)
+                entrezIDs.loc[protID,'Strand'] = strand
+                entrezIDs.loc[protID,'TaxonID'] = taxaID
 
 # Calculate gene length
 
 entrezIDs = entrezIDs.dropna(subset='Gene')
 entrezIDs['Length'] = entrezIDs['End'] - entrezIDs['Start']
-
-entrezIDs.to_csv(path.join(dirname,'blastP_genes.csv'))
 
 #%% Fetch genomes
 
@@ -128,10 +123,15 @@ for protID,entry in entrezIDs.iloc[0:].iterrows():
             fasta_url = ftp_path + "/" + ftp_path.split("/")[-1] + "_genomic.fna.gz"
             
             # Download the genomes
-            os.makedirs(path.join(dirname,f'Genomes/{assemblyID}'), exist_ok=True)
-            os.system(f"wget -c --read-timeout=5 --tries=0 {shlex.quote(fasta_url)}")
-    
-#%%
+            genome_dir = path.join(dirname,f'Genomes/{assemblyID}')
+            os.makedirs(genome_dir, exist_ok=True)
+            os.system(f"wget -c --read-timeout=5 --tries=0 {shlex.quote(fasta_url)} -P {genome_dir}")
+
+
+entrezIDs.to_csv(path.join(dirname,'blastP_genes.csv'))
+
+
+
 
 
 
