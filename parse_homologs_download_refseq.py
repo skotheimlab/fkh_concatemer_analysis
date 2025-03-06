@@ -12,6 +12,7 @@ import os
 from re import findall
 
 from Bio import Entrez
+Entrez.email = 'xies@stanford.edu'
 
 dirname = '/Users/xies/Library/CloudStorage/OneDrive-Stanford/Bioinformatics/Whi5/'
 
@@ -19,12 +20,15 @@ dirname = '/Users/xies/Library/CloudStorage/OneDrive-Stanford/Bioinformatics/Whi
 
 entrezIDs = pd.DataFrame(columns=['Protein','mRNA','Gene','TaxonID','Chr','Start','End','Strand','Assembly','Organism'])
 
+#Manually put in Whi5 and Whi7
+# entrezIDs['DAA09241'] = {'Protein':'DAA09241','mRNA':
+
+
 blastp = pd.read_csv(path.join(dirname,'Fungal BLASTP/blastp.txt'),sep='|',header=None)
 Nhead = len(blastp)
 
 # Subject is from GenBank accession number
 blastp['GenBank'] = blastp[3].str.split('.',expand=True)[0]
-Entrez.email = 'xies@stanford.edu'
 
 proteins = { entry['GenBank'] :
     Entrez.read(Entrez.efetch(db='protein',rettype='gb',retmode='xml',
@@ -35,7 +39,6 @@ entrezIDs['Protein'] = blastp.iloc[0:Nhead]['GenBank']
 entrezIDs.index = entrezIDs['Protein']
 
 #% Kick it up to the mRNA
-
 mRNAs = {}
 for protID,entry in proteins.items():
     # transcriptID = entry['GBSeq_source-db'].split(' ')[2].split('.')[0]
@@ -48,8 +51,7 @@ for protID,entry in proteins.items():
         mRNAs[protID] = rec
         print(transcriptID)
 
-#% Find the gene records
-
+#% Find the gene records\
 genes = {}
 for protID,entry in mRNAs.items():
     
@@ -113,7 +115,7 @@ entrezIDs['Length'] = entrezIDs['End'] - entrezIDs['Start']
 
 import shlex
 
-for protID,entry in entrezIDs.iloc[0:].iterrows():
+for protID,entry in entrezIDs.iterrows():
     
     stream = Entrez.esearch(db='assembly',
         term=entry['TaxonID']+'[taxid]', rettype='docsum',retmode='xml')
