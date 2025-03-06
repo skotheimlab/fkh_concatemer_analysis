@@ -17,7 +17,7 @@ dirname = '/Users/xies/Library/CloudStorage/OneDrive-Stanford/Bioinformatics/Whi
 
 #%% Fungal BlastP
 
-entrezIDs = pd.DataFrame(columns=['Protein','mRNA','Gene','TaxonID','Chr','Start','End','Strand','Assembly'])
+entrezIDs = pd.DataFrame(columns=['Protein','mRNA','Gene','TaxonID','Chr','Start','End','Strand','Assembly','Organism'])
 
 blastp = pd.read_csv(path.join(dirname,'Fungal BLASTP/blastp.txt'),sep='|',header=None)
 Nhead = len(blastp)
@@ -61,12 +61,19 @@ for protID,entry in mRNAs.items():
                    # Find valud genes
                    geneID = qualifier['GBQualifier_value'].split(':')[1]
                    entrezIDs.loc[protID,'Gene'] = geneID
-                   # Retrieve the gene record
                    
+                   # Retrieve the gene record
                    stream = Entrez.efetch(db='Gene',rettype='gb',retmode='xml',
                                           id=geneID)
                    rec = Entrez.read(stream)[0]
                    genes[protID] = rec
+                   
+                   # Retrieve organism name
+                   orgname = rec['Entrezgene_source']['BioSource']['BioSource_org']['Org-ref']['Org-ref_orgname']['OrgName']['OrgName_name']['OrgName_name_binomial']['BinomialOrgName']
+                   gen = orgname['BinomialOrgName_genus']
+                   spe = orgname['BinomialOrgName_species']
+                   entrezIDs.loc[protID,'Organism'] = gen + ' ' + spe
+                   
                    print(geneID)
 
 # Parse gene records to grab coordinates
